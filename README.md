@@ -4,12 +4,12 @@ Oyente
 ## Notice
 1. solc version `v0.4.19`
 
-1. evm version `v1.7.3`/`v1.8.2-v1.8.16` `v1.8.16+`evm disasm has changed which appears to cause issues with the tokenizer 
+1. evm version `v1.7.3`/`v1.8.2-v1.8.16` `v1.8.17+`evm disasm has changed which appears to cause issues with the tokenizer 
 
 ```
 git clone go-ethereum
 git checkout v1.8.2
-make all
+make all (build instructions include evm and so on, GO111MODULE=off, or make fail)
 vim ~/.bashrc
 add /build/bin to path
 ```
