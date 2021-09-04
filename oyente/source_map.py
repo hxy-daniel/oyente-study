@@ -31,30 +31,33 @@ class SourceMap:
     remap = ""
     allow_paths = ""
 
+    # cname(绝对路径+文件名.sol:合约名) parent_filename(合约文件名？)
     def __init__(self, cname, parent_filename, input_type, root_path="", remap="", allow_paths=""):
         self.root_path = root_path
-        self.cname = cname
+        # 截取cname的后部分，作为key(文件名.sol:合约名)
+        self.cname = cname.split('/')[-1]
+        # self.cname = cname
         self.input_type = input_type
         if not SourceMap.parent_filename:
             SourceMap.remap = remap
             SourceMap.allow_paths = allow_paths
             SourceMap.parent_filename = parent_filename
             if input_type == "solidity":
-                SourceMap.position_groups = SourceMap._load_position_groups()
+                SourceMap.position_groups = SourceMap._load_position_groups()   # 编译生成对应合约asm和solidity版本信息
             elif input_type == "standard json":
                 SourceMap.position_groups = SourceMap._load_position_groups_standard_json()
             else:
                 raise Exception("There is no such type of input")
             SourceMap.ast_helper = AstHelper(SourceMap.parent_filename, input_type, SourceMap.remap, SourceMap.allow_paths)
             SourceMap.func_to_sig_by_contract = SourceMap._get_sig_to_func_by_contract()
-        self.source = self._get_source()
-        self.positions = self._get_positions()
+        self.source = self._get_source()    #源代码内容和文件名
+        self.positions = self._get_positions()  # [{'begin': 25, 'end': 692, 'name': 'PUSH', 'value': '60'} ...]
         self.instr_positions = {}
-        self.var_names = self._get_var_names()
-        self.func_call_names = self._get_func_call_names()
+        self.var_names = self._get_var_names()  # 变量名称集合
+        self.func_call_names = self._get_func_call_names()     # 函数调用集合 ['bytes32(11111)', 'owner.send(reward)', 'sha256(msg.data)', 'msg.sender.send(reward)']
         self.callee_src_pairs = self._get_callee_src_pairs()
         self.func_name_to_params = self._get_func_name_to_params()
-        self.sig_to_func = self._get_sig_to_func()
+        self.sig_to_func = self._get_sig_to_func()  # 函数及对应hash签名 变量？{'diff()': 'a0d7afb7', 'locked()': 'cf309012', 'owner()': '8da5cb5b', 'reward()': '228cb733', 'solution()': '4fb60251'}
 
     def get_source_code(self, pc):
         try:
@@ -172,6 +175,7 @@ class SourceMap:
         output = json.loads(output)
         return output["contracts"]
 
+    # 编译生成asm和版本信息
     @classmethod
     def _load_position_groups(cls):
         if cls.allow_paths:

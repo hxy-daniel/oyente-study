@@ -8,7 +8,7 @@ class AstHelper:
         self.allow_paths = allow_paths
         if input_type == "solidity":
             self.remap = remap
-            self.source_list = self.get_source_list(filename)   # 获取AST
+            self.source_list = self.get_source_list(filename)
         elif input_type == "standard json":
             self.source_list = self.get_source_list_standard_json(filename)
         else:

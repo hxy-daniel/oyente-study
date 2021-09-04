@@ -97,6 +97,7 @@ def run_solidity_analysis(inputs):
             exit_code = 1
     return results, exit_code
 
+# 分析solidity合约
 def analyze_solidity(input_type='solidity'):
     global args
 
@@ -106,6 +107,8 @@ def analyze_solidity(input_type='solidity'):
         helper = InputHelper(InputHelper.STANDARD_JSON, source=args.source, evm=args.evm, allow_paths=args.allow_paths)
     elif input_type == 'standard_json_output':
         helper = InputHelper(InputHelper.STANDARD_JSON_OUTPUT, source=args.source, evm=args.evm)
+    
+    # 获取合约相关信息，用于分析
     inputs = helper.get_inputs(global_params.TARGET_CONTRACTS)
     results, exit_code = run_solidity_analysis(inputs)
     helper.rm_tmp_files()
