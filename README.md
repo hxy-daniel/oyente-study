@@ -22,7 +22,7 @@ add /build/bin to path
 1. logger设置
 1. `-s`指定合约文件或`-ru`指定远程合约文件
 1. 调用analyze_solidity()
-    2. inputs = InputHelper(...).get_inputs(...) 生成.evm和.evm.disasm文件，获取合约信息用于分析
+2. inputs = InputHelper(...).get_inputs(...) 生成.evm和.evm.disasm文件，获取合约信息用于分析
     inputs
     ```
     {
