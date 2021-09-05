@@ -16,6 +16,161 @@ add /build/bin to path
 
 1. crytic-compile `v0.1.13` the latest version has some question(not compatible with oyente).
 
+## 原理分析
+1. 全局参数设置
+1. 命令行参数设置
+1. logger设置
+1. `-s`指定合约文件或`-ru`指定远程合约文件
+1. 调用analyze_solidity()
+    2. inputs = InputHelper(...).get_inputs(...) 生成.evm和.evm.disasm文件，获取合约信息用于分析
+    inputs
+    ```
+    {
+        'contract': '/home/daniel/paper/oyente/remote_contract.sol:Puzzle', 
+        'source_map': SourceMap对象, 
+        'source': 'remote_contract.sol', 
+        'c_source': '/home/daniel/paper/oyente/remote_contract.sol', 
+        'c_name': 'Puzzle', 
+        'disasm_file': '/home/daniel/paper/oyente/remote_contract.sol:Puzzle.evm.disasm'
+    }
+    ```
+
+    source_map
+    ```
+    {
+        'allow_path': '',
+        'ast_helper': AstHelper对象,
+        'callee_src_pairs': [],
+        'cname': 'remote_contract.sol:Puzzle',
+        'func_call_name': ['bytes32(11111)', 'owner.send(reward)', 'sha256(msg.data)', 'msg.sender.send(reward)'],
+        'func_name_to_params': {},
+        'func_to_sig_by_contract': {
+            'remote_contract.sol:Puzzle': {
+                'hashes': {
+                    'diff()': 'a0d7afb7', 'locked()': 'cf309012', 'owner()': '8da5cb5b', 'reward()': '228cb733', 'solution()': '4fb60251'
+                }
+            }
+        },
+        'input_type': 'solidity',
+        'instr_positions': {},
+        'parent_filename': 'remote_contract.sol',
+        'postiion_groups': {
+            'remote_contract.sol:Puzzle': {
+                'asm': {
+                    '.code': [
+                        {'begin': 25, 'end': 692, 'name': 'PUSH', 'value': '60'}, 
+                        {'begin': 25, 'end': 692, 'name': 'PUSH', 'value': '40'}, 
+                        {'begin': 25, 'end': 692, 'name': 'MSTORE'}, 
+                        {'begin': 155, 'end': 288, 'name': 'CALLVALUE'},
+                        {'begin': 155, 'end': 288, 'name': 'ISZERO'}, 
+                        {'begin': 155, 'end': 288, 'name': 'PUSH [tag]', 'value': '1'}, 
+                        {'begin': 155, 'end': 288, 'name': 'JUMPI'}, 
+                        {'begin': 155, 'end': 288, 'name': 'PUSH', 'value': '0'}, 
+                        {'begin': 155, 'end': 288, 'name': 'DUP1'}, 
+                        {'begin': 155, 'end': 288, 'name': 'REVERT'}, 
+                        {'begin': 155, 'end': 288, 'name': 'tag', 'value': '1'}, 
+                        {'begin': 155, 'end': 288, 'name': 'JUMPDEST'}, 
+                        {'begin': 184, 'end': 194, 'name': 'CALLER'}, 
+                        {'begin': 176, 'end': 181, 'name': 'PUSH', 'value': '0'}, 
+                        ...
+                    ], 
+                    '.data': {
+                        '0': {
+                            '.auxdata':'a165627a7a723058205dd5ad1a2690fcdf9a613ca17640ae0744024a2f853eb587dfbfdf7659f275dd0029', 
+                            '.code': [
+                                {'begin': 25, 'end': 692, 'name': 'PUSH', 'value': '60'}, 
+                                {'begin': 25, 'end': 692, 'name': 'PUSH', 'value': '40'}, 
+                                {'begin': 25, 'end': 692, 'name': 'MSTORE'}, 
+                                {'begin': 25, 'end': 692, 'name': 'PUSH', 'value': '4'}, 
+                                {'begin': 25, 'end': 692, 'name': 'CALLDATASIZE'}, 
+                                {'begin': 25, 'end': 692, 'name': 'LT'}, 
+                                {'begin': 25, 'end': 692, 'name': 'PUSH [tag]', 'value': '1'}, 
+                                {'begin': 25, 'end': 692, 'name': 'JUMPI'}, 
+                                {'begin': 25, 'end': 692, 'name': 'PUSH', 'value': '0'}, 
+                                {'begin': 25, 'end': 692, 'name': 'CALLDATALOAD'}, 
+                                {'begin': 25, 'end': 692, 'name': 'PUSH', 'value': '100000000000000000000000000000000000000000000000000000000'}, 
+                                {'begin': 25, 'end': 692, 'name': 'SWAP1'}, 
+                                {'begin': 25, 'end': 692, 'name': 'DIV'}, 
+                                {'begin': 25, 'end': 692, 'name': 'PUSH', 'value': 'FFFFFFFF'}, 
+                                ...
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        'positions': [  // 与上面一样
+            {'begin': 25, 'end': 692, 'name': 'PUSH', 'value': '60'}, 
+            {'begin': 25, 'end': 692, 'name': 'PUSH', 'value': '40'}, 
+            {'begin': 25, 'end': 692, 'name': 'MSTORE'}, 
+            {'begin': 25, 'end': 692, 'name': 'PUSH', 'value': '4'}, 
+            {'begin': 25, 'end': 692, 'name': 'CALLDATASIZE'}, 
+            {'begin': 25, 'end': 692, 'name': 'LT'}, 
+            {'begin': 25, 'end': 692, 'name': 'PUSH [tag]', 'value': '1'}, 
+            {'begin': 25, 'end': 692, 'name': 'JUMPI'}, 
+            {'begin': 25, 'end': 692, 'name': 'PUSH', 'value': '0'}, 
+            {'begin': 25, 'end': 692, 'name': 'CALLDATALOAD'}, 
+            {'begin': 25, 'end': 692, 'name': 'PUSH', 'value': '100000000000000000000000000000000000000000000000000000000'}, 
+            {'begin': 25, 'end': 692, 'name': 'SWAP1'}, 
+            {'begin': 25, 'end': 692, 'name': 'DIV'}, 
+            {'begin': 25, 'end': 692, 'name': 'PUSH', 'value': 'FFFFFFFF'}, 
+            ...
+        ],
+        'remap': '',
+        'root_path': '',
+        sig_to_func: {'a0d7afb7': 'diff()', 'cf309012': 'locked()', '8da5cb5b': 'owner()', '228cb733': 'reward()', '4fb60251': 'solution()'},
+        'source': {
+            'content': 'pragma solidity ^0.4.10;\ncontract Puzzle{\n\taddress public owner;\n\tbool public locked;\n\tuint public reward;\n\tbytes32 public diff;\n\tbytes public solution;\n\n\tfunction Puzzle(){\n\t\towner = msg.sender;\n\t\treward = msg.value;\n\t\tlocked = false;\n\t\tdiff = bytes32(11111); //pre-defined difficulty\n\t}\n\n\tfunction(){ //main code, runs at every invocation\t\n\t\tif (msg.sender == owner){ //update reward\t\t\n\t\t\tif (locked)\n\t\t\t\tthrow;\n\t\t\towner.send(reward);\n\t\t\treward = msg.value;\n\t\t}\n\t\telse\n\t\t\tif (msg.data.length > 0){ //submit a solution\t\t\t\n\t\t\t\tif (locked) throw;\n\t\t\t\tif (sha256(msg.data) < diff){\n\t\t\t\t\tmsg.sender.send(reward); //send reward\n\t\t\t\t\tsolution = msg.data;\n\t\t\t\t\tlocked = true;\n\t\t\t\t}\n\t\t\t\t}\n\t\t\t\t}\n\t\t\t}'
+            'filename': 'remote_contract.sol',
+            'line_break_positions': [24, 41, 64, 85, 106, 128, 152, 153, 173, 195, 217, 235, 285, 288, ...]
+        },
+        'sources': {
+            'remote_contract.sol': {
+            'content': 'pragma solidity ^0.4.10;\ncontract Puzzle{\n\taddress public owner;\n\tbool public locked;\n\tuint public reward;\n\tbytes32 public diff;\n\tbytes public solution;\n\n\tfunction Puzzle(){\n\t\towner = msg.sender;\n\t\treward = msg.value;\n\t\tlocked = false;\n\t\tdiff = bytes32(11111); //pre-defined difficulty\n\t}\n\n\tfunction(){ //main code, runs at every invocation\t\n\t\tif (msg.sender == owner){ //update reward\t\t\n\t\t\tif (locked)\n\t\t\t\tthrow;\n\t\t\towner.send(reward);\n\t\t\treward = msg.value;\n\t\t}\n\t\telse\n\t\t\tif (msg.data.length > 0){ //submit a solution\t\t\t\n\t\t\t\tif (locked) throw;\n\t\t\t\tif (sha256(msg.data) < diff){\n\t\t\t\t\tmsg.sender.send(reward); //send reward\n\t\t\t\t\tsolution = msg.data;\n\t\t\t\t\tlocked = true;\n\t\t\t\t}\n\t\t\t\t}\n\t\t\t\t}\n\t\t\t}'
+            'filename': 'remote_contract.sol',
+            'line_break_positions': [24, 41, 64, 85, 106, 128, 152, 153, 173, 195, 217, 235, 285, 288, ...]
+            }
+        },
+        'var_names': ['owner', 'locked', 'reward', 'diff', 'solution']
+    }
+    ```
+
+    ast_helper
+    ```
+    allow_path: '',
+    contracts: {
+        'contractsById': {95: {'attributes': {...}, 'children': [...], 'id': 95, 'name': 'ContractDefinition', 'src': '25:667:0'}}, 
+        'contractsByName': {'remote_contract.sol:Puzzle': {'attributes': {...}, 'children': [...], 'id': 95, 'name': 'ContractDefinition', 'src': '25:667:0'}}, 
+        'sourcesByContract': {95: 'remote_contract.sol'}
+    },
+    input_type: 'solidity',
+    remap: '',
+    source_list: {
+        'remote_contract.sol': {
+            'AST': {
+                'attributes': {
+                    'absolutePath': 'remote_contract.sol', 
+                    'exportedSymbols': {'Puzzle': [95]}
+                }, 
+                'children': [
+                    {
+                        'attributes': {...}, 'id': 1, 'name': 'PragmaDirective', 'src': '0:24:0'
+                    }, 
+                    {
+                        'attributes': {...}, 'children': [...], 'id': 95, 'name': 'ContractDefinition', 'src': '25:667:0'
+                    }
+                ], 
+                'id': 96, 'name': 'SourceUnit', 'src': '0:692:0'
+            }
+        }
+    }
+    ```
+    
+    2. results, exit_code = run_solidity_analysis(inputs)
+    
+
+
+
 ======
 
 An Analysis Tool for Smart Contracts

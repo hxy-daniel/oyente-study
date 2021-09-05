@@ -111,8 +111,8 @@ def analyze_solidity(input_type='solidity'):
     # 获取合约相关信息，用于分析
     inputs = helper.get_inputs(global_params.TARGET_CONTRACTS)
     results, exit_code = run_solidity_analysis(inputs)
-    helper.rm_tmp_files()
 
+    helper.rm_tmp_files()
     if global_params.WEB:
         six.print_(json.dumps(results))
     return exit_code
