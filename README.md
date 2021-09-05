@@ -21,10 +21,9 @@ add /build/bin to path
 1. 命令行参数设置
 1. logger设置
 1. `-s`指定合约文件或`-ru`指定远程合约文件
-1. 调用analyze_solidity()
+1. 调用`analyze_solidity()`
     1. inputs = InputHelper(...).get_inputs(...) 生成.evm和.evm.disasm文件，获取合约信息用于分析
-    2. results, exit_code = run_solidity_analysis(inputs)
-    
+
     inputs
     ```
     {
@@ -168,7 +167,7 @@ add /build/bin to path
     }
     ```
     
-
+    2. results, exit_code = run_solidity_analysis(inputs)
     
 
 
