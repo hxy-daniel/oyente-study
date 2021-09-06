@@ -707,7 +707,7 @@ def sym_exec_block(params, block, pre_block, depth, func_call, current_func_name
         negated_branch_expression = Not(branch_expression)
         solver.add(negated_branch_expression)
 
-        log.debug("Negated branch expression: " + str(negated_branch_expression))
+        log.debug("Negated branch expression: " + str(negated_branch_expression))   # 否定
 
         try:
             if solver.check() == unsat:
@@ -1843,7 +1843,7 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
     #
     elif opcode.startswith('PUSH', 0):  # this is a push instruction
         position = int(opcode[4:], 10)
-        global_state["pc"] = global_state["pc"] + 1 + position  # 处理pc
+        global_state["pc"] = global_state["pc"] + 1 + position  # pc处理
         pushed_value = int(instr_parts[1], 16)
         stack.insert(0, pushed_value)
         if global_params.UNIT_TEST == 3: # test evm symbolic
@@ -2258,7 +2258,7 @@ def detect_integer_underflow():
         results['vulnerabilities']['integer_underflow'] = integer_underflow.get_warnings()
     else:
         results['vulnerabilities']['integer_underflow'] = integer_underflow.is_vulnerable()
-    log.info('\t  Integer Underflow: \t\t\t %s', integer_underflow.is_vulnerable())
+    log.info('\t  Integer Underflow: \t\t\t %s', integer_underflow.is_vulnerable()) # True/False 
 
 def detect_integer_overflow():
     global integer_overflow
@@ -2309,7 +2309,7 @@ def detect_vulnerabilities():
         if global_params.REPORT_MODE:
             rfile.write(str(total_no_of_paths) + "\n")
 
-        detect_money_concurrency()
+        detect_money_concurrency()  # Transaction-Ordering Dependence (TOD)
         detect_time_dependency()
 
         stop = time.time()

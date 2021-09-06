@@ -1,0 +1,27 @@
+{
+ "evm_code_coverage": "85.1",
+ "vulnerabilities": {
+  "integer_underflow": [
+   "remote_contract.sol:2:1: Warning: Integer Underflow.\ncontract Puzzle{\n^\nSpanning multiple lines.\nInteger Underflow occurs if:\n    reward = 58350110510813448903360825092523159431151750792099371751192934472640320503809\n    owner = 0\n    diff = 1",
+   "remote_contract.sol:7:2: Warning: Integer Underflow.\n\tbytes public solution"
+  ],
+  "integer_overflow": [
+   "remote_contract.sol:7:2: Warning: Integer Overflow.\n\tbytes public solution"
+  ],
+  "callstack": [
+   "remote_contract.sol:20:4: Warning: Callstack Depth Attack Vulnerability.\n\t\t\towner.send(reward)"
+  ],
+  "money_concurrency": [
+   [
+    "remote_contract.sol:27:6: Warning: Transaction-Ordering Dependency.\n\t\t\t\t\tmsg.sender.send(reward)"
+   ],
+   [
+    "remote_contract.sol:20:4: Warning: Transaction-Ordering Dependency.\n\t\t\towner.send(reward)"
+   ]
+  ],
+  "time_dependency": [],
+  "reentrancy": [],
+  "assertion_failure": [],
+  "parity_multisig_bug_2": []
+ }
+}

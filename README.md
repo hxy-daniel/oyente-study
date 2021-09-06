@@ -199,7 +199,7 @@ add /build/bin to path
                                         # 简单的设置为下一个块的起始pc(why?)
                                 vertices    # {0: {start: 0, end: 12, falls_to: 13, type: 'conditional', jump_target: 0, instructions: ['PUSH1 0x60 ', 'PUSH1 0x40 ', 'MSTORE ', 'PUSH1 0x04 ', 'CALLDATASIZE ', 'LT ', 'PUSH2 0x006d ', 'JUMPI ']},  ...}
                                             # 简单的设置falls_to为下一个块的起始pc(why?)
-                                            # jump_target在指令执行的时候赋值
+                                            # jump_target、branch_expression(JUMPI时)在指令执行的时候赋值
                         full_sym_exec()  # 符号执行：跳转目标是动态构建的，构造global_state和path_conditions_and_vars用于符号执行
                             # executing, starting from beginning 执行，从头开始
                             path_conditions_and_vars = {"path_condition" : []}  # 路径条件和变量
@@ -235,6 +235,14 @@ add /build/bin to path
                             return sym_exec_block(params, 0, 0, 0, -1, 'fallback')  # 从起始地址符号执行一个块，内含递归符号执行
 
             ret = detect_vulnerabilities()
+                detect_integer_underflow()
+                detect_integer_overflow()
+                detect_parity_multisig_bug_2()
+                detect_callstack_attack()
+                detect_money_concurrency()
+                detect_time_dependency()
+                detect_reentrancy()
+                detect_assertion_failure()
             closing_message()
             return ret
     ```
