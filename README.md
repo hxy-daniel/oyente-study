@@ -4,7 +4,7 @@ Oyente
 ## Notice
 1. solc version `v0.4.19`
 
-1. evm version `v1.7.3`/`v1.8.2-v1.8.16` `v1.8.17+`evm disasm has changed which appears to cause issues with the tokenizer 
+1. evm version `v1.7.3`/`v1.8.2-v1.8.16` `v1.8.17+`evm disasm has changed which appears to cause issues with the tokenizer, 在change_format()中对十六进制进行处理为十进制可能会解决问题
 
 ```
 git clone go-ethereum
@@ -26,14 +26,16 @@ add /build/bin to path
 
     inputs
     ```
-    {
-        'contract': '/home/daniel/paper/oyente/remote_contract.sol:Puzzle', 
-        'source_map': SourceMap对象, 
-        'source': 'remote_contract.sol', 
-        'c_source': '/home/daniel/paper/oyente/remote_contract.sol', 
-        'c_name': 'Puzzle', 
-        'disasm_file': '/home/daniel/paper/oyente/remote_contract.sol:Puzzle.evm.disasm'
-    }
+    [
+        {
+            'contract': '/home/daniel/paper/oyente/remote_contract.sol:Puzzle', 
+            'source_map': SourceMap对象, 
+            'source': 'remote_contract.sol', 
+            'c_source': '/home/daniel/paper/oyente/remote_contract.sol', 
+            'c_name': 'Puzzle', 
+            'disasm_file': '/home/daniel/paper/oyente/remote_contract.sol:Puzzle.evm.disasm'
+        }
+    ]
     ```
 
     source_map
@@ -168,7 +170,76 @@ add /build/bin to path
     ```
     
     2. results, exit_code = run_solidity_analysis(inputs)
-    
+
+    ```python
+    # oyente.py
+    results, exit_code = run_solidity_analysis(inputs)
+        # symExec.py 符号执行
+        result, return_code = symExec.run(...)
+            analyze()   # 分析
+                run_build_cfg_and_analyze()
+                    build_cfg_and_analyze() # 构建控制流图和分析，有超时检测
+                        change_format()
+                            # 读取disasm文件，替换部分操作指令，去除pc中的前导0，添加=>得到新的disasm文件
+                            # 高版本的evm可能需要在这里处理十六进制的pc，转为十进制，否则会报错(如：c JUMPI 中无效的c)
+                        # 读取disasm文件
+                        disasm_file.readline()  # 忽略第一行字节码
+                        tokens = tokenize.generate_tokens(disasm_file.readline)
+                        collect_vertices(tokens)    # 1.解析disasm文件 2.识别每个基本块（开始/结束pc位置和跳转类型） 3.将它们存储在顶点中
+                            instructions[]  # 所有指令数组{0: 'PUSH1 0x60 ', 2: 'PUSH1 0x40 ', 4: 'MSTORE ', 5: 'PUSH1 0x04 '}
+                            end_ins_dict    # 存储基本块的开始结束pc{0: 12, 13: 64, 65: 75, 76: 86, 87: 97, 98: 108 ...}
+                            jump_type   # 存储每个块的跳转类型{key:块起始pc, value:类型} { 0:'conditional', 13:'conditional', 65:'conditional', 76:'conditional', 87:'conditional', 98:'conditional', 109:'conditional', 116:'terminal', 120:'conditional', 206:'conditional', 227:'terminal', 231:'unconditional', 332:'conditional', ... , 1302:'unconditional', 1305:'terminal', 519:'falls_to', 548:'falls_to', 549:'falls_to', 612:'falls_to', 696:'falls_to', 1027:'falls_to', 1061:'falls_to', 1220:'falls_to', 1250:'falls_to', 1268:'falls_to'} falls_to都在后面，会影响边的构建
+                        construct_bb()  # 构建BasicBlock字典列表，未设置jump_target
+                            vertices    # {0: <BasicBlock>, 13: <BasicBlock>, 65: <BasicBlock>,  ...}
+                            # {0: {start: 0, end: 12, type: 'conditional', jump_target: 0, instructions: ['PUSH1 0x60 ', 'PUSH1 0x40 ', 'MSTORE ', 'PUSH1 0x04 ', 'CALLDATASIZE ', 'LT ', 'PUSH2 0x006d ', 'JUMPI ']}, ... }
+                            edges   # 此时赋值为[], {0: [], 13: [], 65: [], ...}
+                        construct_static_edges()    # 构造静态边，设置BasicBlock的falls_to属性
+                            add_falls_to()  # 1.设置vertices BasicBlock中的falls_to属性值，2.构造edges 这些边是静态的，BasicBlock中有falls_to(落在)属性
+                                edges   # {0: [13], 13: [65], 65: [76], 76: [87], 87: [98], 98: [109], 109: [116], 116: [], 120: [206], ...} pc经过排序
+                                        # 简单的设置为下一个块的起始pc(why?)
+                                vertices    # {0: {start: 0, end: 12, falls_to: 13, type: 'conditional', jump_target: 0, instructions: ['PUSH1 0x60 ', 'PUSH1 0x40 ', 'MSTORE ', 'PUSH1 0x04 ', 'CALLDATASIZE ', 'LT ', 'PUSH2 0x006d ', 'JUMPI ']},  ...}
+                                            # 简单的设置falls_to为下一个块的起始pc(why?)
+                        full_sym_exec()  # 符号执行：跳转目标是动态构建的
+            ret = detect_vulnerabilities()
+            closing_message()
+            return ret
+    ```
+
+    results
+    ```
+    {
+        '/home/daniel/paper/oyente/remote_contract.sol': {
+            'Puzzle': {
+                'evm_code_coverage': '85.1', 
+                'vulnerabilities': {
+                    'integer_underflow': [
+                        'remote_contract.sol:2:1: Warning: Integer Underflow.\ncontract Puzzle{\n^\nSpanning multiple lines.\nInteger Underflow occurs if:\n    reward = 58350110510813448903360825092523159431151750792099371751192934472640320503809\n    owner = 0\n    diff = 1', 'remote_contract.sol:7:2: Warning: Integer Underflow.\n\tbytes public solution'
+                    ], 
+                    'integer_overflow': [
+                        'remote_contract.sol:7:2: Warning: Integer Overflow.\n\tbytes public solution'
+                    ], 
+                    'callstack': [
+                        'remote_contract.sol:20:4: Warning: Callstack Depth Attack Vulnerability.\n\t\t\towner.send(reward)'
+                    ], 
+                    'money_concurrency': [
+                        [
+                            'remote_contract.sol:27:6: Warning: Transaction-Ordering Dependency.\n\t\t\t\t\tmsg.sender.send(reward)'], ['remote_contract.sol:20:4: Warning: Transaction-Ordering Dependency.\n\t\t\towner.send(reward)'
+                        ]
+                    ], 
+                    'time_dependency': [], 
+                    'reentrancy': [] 
+                    'assertion_failure': [], 
+                    'parity_multisig_bug_2': []
+                }
+            }
+        }
+    }
+    ```
+
+    exit_code
+    ```
+    exit_code = 1
+    ```
 
 
 

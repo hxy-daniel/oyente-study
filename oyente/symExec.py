@@ -294,17 +294,17 @@ def collect_vertices(tokens):
     global instructions
     global jump_type
 
-    current_ins_address = 0
+    current_ins_address = 0 # pc
     last_ins_address = 0
-    is_new_line = True
+    is_new_line = True  # 新行标识
     current_block = 0
     current_line_content = ""
-    wait_for_push = False
+    wait_for_push = False   # PUSH 后为True
     is_new_block = False
 
-    # tok_type:'number' tok_string:'0000' 不是'0000c'
+    # tok_type:'number' tok_string:'0000' 不是'0000c'，需在change_format()中更改
     for tok_type, tok_string, (srow, scol), _, line_number in tokens:
-        if wait_for_push is True:
+        if wait_for_push is True:   # 对PUSH后的值进行处理
             push_val = ""
             for ptok_type, ptok_string, _, _, _ in tokens:
                 if ptok_type == NEWLINE:
@@ -332,10 +332,10 @@ def collect_vertices(tokens):
                 quit()
             is_new_line = False
             if is_new_block:
-                current_block = current_ins_address
+                current_block = current_ins_address # 新块的起始pc
                 is_new_block = False
             continue
-        elif tok_type == NEWLINE:
+        elif tok_type == NEWLINE:   # /n
             is_new_line = True
             log.debug(current_line_content)
             instructions[current_ins_address] = current_line_content
@@ -368,19 +368,22 @@ def collect_vertices(tokens):
         # if tok_string != "=" and tok_string != ">" and not(tok_string >= "a" and tok_string <= "f"):
             current_line_content += tok_string + " "
 
+    # 结束时给最后一个赋值
     if current_block not in end_ins_dict:
         log.debug("current block: %d", current_block)
         log.debug("last line: %d", current_ins_address)
         end_ins_dict[current_block] = current_ins_address
 
+    # 结束时给最后一个赋值
     if current_block not in jump_type:
         jump_type[current_block] = "terminal"
 
+    # 结束时给其他块的跳转类型赋值
     for key in end_ins_dict:
         if key not in jump_type:
-            jump_type[key] = "falls_to"
+            jump_type[key] = "falls_to" # ?
 
-
+# BasicBlock
 def construct_bb():
     global vertices
     global edges
@@ -408,13 +411,13 @@ def construct_static_edges():
 def add_falls_to():
     global vertices
     global edges
-    key_list = sorted(jump_type.keys())
+    key_list = sorted(jump_type.keys()) # falls_to都在后面，会影响边的构建，需要进行pc排序
     length = len(key_list)
     for i, key in enumerate(key_list):
-        if jump_type[key] != "terminal" and jump_type[key] != "unconditional" and i+1 < length:
+        if jump_type[key] != "terminal" and jump_type[key] != "unconditional" and i+1 < length: # 即为"falls_to"/"conditional"
             target = key_list[i+1]
-            edges[key].append(target)
-            vertices[key].set_falls_to(target)
+            edges[key].append(target)   # 简单的设置为下一个块的起始pc
+            vertices[key].set_falls_to(target)  # 简单的设置为下一个块的起始pc
 
 
 def get_init_global_state(path_conditions_and_vars):
@@ -541,7 +544,7 @@ def get_start_block_to_func_sig():
     return start_block_to_func_sig
 
 def full_sym_exec():
-    # executing, starting from beginning
+    # executing, starting from beginning 执行，从头开始
     path_conditions_and_vars = {"path_condition" : []}
     global_state = get_init_global_state(path_conditions_and_vars)
     analysis = init_analysis()
