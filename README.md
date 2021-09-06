@@ -199,6 +199,7 @@ add /build/bin to path
                                         # 简单的设置为下一个块的起始pc(why?)
                                 vertices    # {0: {start: 0, end: 12, falls_to: 13, type: 'conditional', jump_target: 0, instructions: ['PUSH1 0x60 ', 'PUSH1 0x40 ', 'MSTORE ', 'PUSH1 0x04 ', 'CALLDATASIZE ', 'LT ', 'PUSH2 0x006d ', 'JUMPI ']},  ...}
                                             # 简单的设置falls_to为下一个块的起始pc(why?)
+                                            # jump_target在指令执行的时候赋值
                         full_sym_exec()  # 符号执行：跳转目标是动态构建的，构造global_state和path_conditions_and_vars用于符号执行
                             # executing, starting from beginning 执行，从头开始
                             path_conditions_and_vars = {"path_condition" : []}  # 路径条件和变量

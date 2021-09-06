@@ -40,9 +40,9 @@ def check_reentrancy_bug(path_conditions_and_vars, stack, global_state):
     path_condition = path_conditions_and_vars["path_condition"]
     new_path_condition = []
     for expr in path_condition:
-        if not is_expr(expr):
+        if not is_expr(expr):   # 判断是否是z3表达式
             continue
-        list_vars = get_vars(expr)
+        list_vars = get_vars(expr)  # 获取表达式变量列表
         for var in list_vars:
             # check if a var is global
             if is_storage_var(var):
@@ -64,9 +64,10 @@ def check_reentrancy_bug(path_conditions_and_vars, stack, global_state):
     # 2300 is the outgas used by transfer and send.
     # If outgas > 2300 when using call.gas.value then the contract will be considered to contain reentrancy bug
     solver.add(stack[0] > 2300)
-    # transfer_amount > deposit_amount => reentrancy
+    # transfer_amount > deposit_amount => reentrancy why?
     solver.add(stack[2] > BitVec('Iv', 256))
     # if it is not feasible to re-execute the call, its not a bug
+    # 如果重新执行调用不可行，则不是bug
     ret_val = not (solver.check() == unsat)
     if global_params.DEBUG_MODE:
         log.info("Reentrancy_bug? " + str(ret_val))
@@ -165,6 +166,7 @@ def calculate_gas(opcode, stack, mem, global_state, analysis, solver):
 
     return (gas_increment, new_gas_memory)
 
+# gas计算、重入CALL、SUICIDE检测
 def update_analysis(analysis, opcode, stack, mem, global_state, path_conditions_and_vars, solver):
     gas_increment, gas_memory = calculate_gas(opcode, stack, mem, global_state, analysis, solver)
     analysis["gas"] += gas_increment

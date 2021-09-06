@@ -785,12 +785,16 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
     # since SE will modify the stack and mem
     # 因为符号执行将修改stack和mem
     update_analysis(analysis, opcode, stack, mem, global_state, path_conditions_and_vars, solver)
+
+    # 如果确认存在重入则将pc添加到global_problematic_pcs["reentrancy_bug"]
     if opcode == "CALL" and analysis["reentrancy_bug"] and analysis["reentrancy_bug"][-1]:
         global_problematic_pcs["reentrancy_bug"].append(global_state["pc"])
 
     log.debug("==============================")
     log.debug("EXECUTING: " + instr)
 
+    #
+    # 以下是指令执行
     #
     #  0s: Stop and Arithmetic Operations
     #
@@ -819,10 +823,12 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
             if jump_type[block] == 'conditional':
                 jump_target = vertices[block].get_jump_target()
                 falls_to = vertices[block].get_falls_to()
+                # 检测jump_target块的指令和falls_to块的指令中是否有REVERT指令
                 check_revert = any([True for instruction in vertices[jump_target].get_instructions() if instruction.startswith('REVERT')])
                 if not check_revert:
                     check_revert = any([True for instruction in vertices[falls_to].get_instructions() if instruction.startswith('REVERT')])
 
+            # integer_overflow检测，有REVERT指令则不需要检测，会撤销，不会导致integer_overflow
             if jump_type[block] != 'conditional' or not check_revert:
                 if not isAllReal(computed, first):
                     solver.push()
@@ -849,6 +855,8 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
             stack.insert(0, computed)
         else:
             raise ValueError('STACK underflow')
+
+    # integer_underflow检测
     elif opcode == "SUB":
         if len(stack) > 1:
             global_state["pc"] = global_state["pc"] + 1
@@ -883,6 +891,8 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
             stack.insert(0, computed)
         else:
             raise ValueError('STACK underflow')
+    
+    # 除0处理
     elif opcode == "DIV":
         if len(stack) > 1:
             global_state["pc"] = global_state["pc"] + 1
@@ -1022,7 +1032,7 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
             stack.insert(0, computed)
         else:
             raise ValueError('STACK underflow')
-    elif opcode == "ADDMOD":
+    elif opcode == "ADDMOD":    # (a + b) % c
         if len(stack) > 2:
             global_state["pc"] = global_state["pc"] + 1
             first = stack.pop(0)
@@ -1093,6 +1103,7 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
             else:
                 # The computed value is unknown, this is because power is
                 # not supported in bit-vector theory
+                # 不支持幂操作，设为未知数
                 new_var_name = gen.gen_arbitrary_var()
                 computed = BitVec(new_var_name, 256)
             computed = simplify(computed) if is_expr(computed) else computed
@@ -1229,6 +1240,7 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
         # Tricky: this instruction works on both boolean and integer,
         # when we have a symbolic expression, type error might occur
         # Currently handled by try and catch
+        # 棘手：这条指令适用于布尔型和整数型，当我们有一个符号表达式时，可能会发生类型错误目前由 try 和 catch 处理
         if len(stack) > 0:
             global_state["pc"] = global_state["pc"] + 1
             first = stack.pop(0)
@@ -1815,8 +1827,9 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
     elif opcode == "GAS":
         # In general, we do not have this precisely. It depends on both
         # the initial gas and the amount has been depleted
-        # we need o think about this in the future, in case precise gas
+        # we need to think about this in the future, in case precise gas
         # can be tracked
+        # 一般来说，我们并没有准确地做到这一点。 这取决于初始gas和消耗的数量，我们需要在未来考虑这一点，以防可以跟踪精确的gas
         global_state["pc"] = global_state["pc"] + 1
         new_var_name = gen.gen_gas_var()
         new_var = BitVec(new_var_name, 256)
@@ -1830,7 +1843,7 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
     #
     elif opcode.startswith('PUSH', 0):  # this is a push instruction
         position = int(opcode[4:], 10)
-        global_state["pc"] = global_state["pc"] + 1 + position
+        global_state["pc"] = global_state["pc"] + 1 + position  # 处理pc
         pushed_value = int(instr_parts[1], 16)
         stack.insert(0, pushed_value)
         if global_params.UNIT_TEST == 3: # test evm symbolic
