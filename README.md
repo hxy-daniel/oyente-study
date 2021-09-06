@@ -199,7 +199,40 @@ add /build/bin to path
                                         # 简单的设置为下一个块的起始pc(why?)
                                 vertices    # {0: {start: 0, end: 12, falls_to: 13, type: 'conditional', jump_target: 0, instructions: ['PUSH1 0x60 ', 'PUSH1 0x40 ', 'MSTORE ', 'PUSH1 0x04 ', 'CALLDATASIZE ', 'LT ', 'PUSH2 0x006d ', 'JUMPI ']},  ...}
                                             # 简单的设置falls_to为下一个块的起始pc(why?)
-                        full_sym_exec()  # 符号执行：跳转目标是动态构建的
+                        full_sym_exec()  # 符号执行：跳转目标是动态构建的，构造global_state和path_conditions_and_vars用于符号执行
+                            # executing, starting from beginning 执行，从头开始
+                            path_conditions_and_vars = {"path_condition" : []}  # 路径条件和变量
+                            global_state = get_init_global_state(path_conditions_and_vars)  # 初始化全局状态，同时对路径条件和变量赋值
+                                # global_state: {'balance': {'Is': init_Is - Iv, 'Ia': init_Ia + Iv}, 'pc': 0, 'Ia': {}, 'miu_i': 0, 'value': Iv, 'sender_address': Is, 'receiver_address': Ia, 'gas_price': Ip, 'origin': Io, 'currentCoinbase': IH_c, 'currentTimestamp': IH_s, 'currentNumber': IH_i, 'currentDifficulty': IH_d, 'currentGasLimit': IH_l}
+                                # 都是BitVec对象 { ast: <Ast object>, ctx: <z3.z3.Context object>}
+                                # path_conditions_and_vars: {'path_condition': [0 <= Iv, init_Is >= Iv, 0 <= init_Ia], 'Is': Is, 'Ia': Ia, 'Iv': Iv, 'Ip': Ip, 'Io': Io, 'IH_c': IH_c, 'IH_i': IH_i, 'IH_d': IH_d, 'IH_l': IH_l, 'IH_s': IH_s}
+                                # 都是BitVec对象 { ast: <Ast object>, ctx: <z3.z3.Context object>}
+                            analysis = init_analysis()
+                                # analysis: {'gas': 0, 'gas_mem': 0, 'money_flow': [('Is', 'Ia', 'Iv')] (source, destination, amount), 'reentrancy_bug': [], 'money_concurrency_bug': [], 'time_dependency_bug': {}}
+                            params = Parameter(path_conditions_and_vars=path_conditions_and_vars, global_state=global_state, analysis=analysis)
+                            if g_src_map:
+                                start_block_to_func_sig = get_start_block_to_func_sig() # 获取函数的pc和签名 {552: '228cb733', 593: '4fb60251', 735: '8da5cb5b', 820: 'a0d7afb7', 869: 'cf309012'}
+                                    # PUSH4 0x228cb733  (函数签名)
+                                    # EQ
+                                    # PUSH2 0x0228    (pc)
+                                    # JUMPI
+                                    # DUP1
+                                    # PUSH4 0x4fb60251
+                                    # EQ
+                                    # PUSH2 0x0251    (pc)
+                                    # JUMPI
+                                    # DUP1
+                                    # PUSH4 0x8da5cb5b
+                                    # EQ
+                                    # PUSH2 0x02df    (pc)
+                                    # JUMPI
+                                    # DUP1
+                                    # PUSH4 0xa0d7afb7
+                                    # EQ
+                                    # PUSH2 0x0334    (pc)
+                                    
+                            return sym_exec_block(params, 0, 0, 0, -1, 'fallback')  # 从起始地址符号执行一个块，内含递归符号执行
+
             ret = detect_vulnerabilities()
             closing_message()
             return ret

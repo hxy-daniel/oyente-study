@@ -72,13 +72,16 @@ def check_reentrancy_bug(path_conditions_and_vars, stack, global_state):
         log.info("Reentrancy_bug? " + str(ret_val))
     return ret_val
 
+# 计算gas消耗和gas_memory
 def calculate_gas(opcode, stack, mem, global_state, analysis, solver):
     gas_increment = get_ins_cost(opcode) # base cost
     gas_memory = analysis["gas_mem"]
     # In some opcodes, gas cost is not only depend on opcode itself but also current state of evm
+    # 在某些操作码中，gas 成本不仅取决于操作码本身，还取决于 evm 的当前状态
     # For symbolic variables, we only add base cost part for simplicity
+    # 对于符号变量，为了简单起见，我们只添加基本成本部分
     if opcode in ("LOG0", "LOG1", "LOG2", "LOG3", "LOG4") and len(stack) > 1:
-        if isReal(stack[1]):
+        if isReal(stack[1]):    # 判断是否是int类型
             gas_increment += GCOST["Glogdata"] * stack[1]
     elif opcode == "EXP" and len(stack) > 1:
         if isReal(stack[1]) and stack[1] > 0:
@@ -106,7 +109,7 @@ def calculate_gas(opcode, stack, mem, global_state, analysis, solver):
                     gas_increment += GCOST["Gsset"]
                 elif stack[1] == 0:
                     gas_increment += GCOST["Gsreset"]
-        else:
+        else:   # 符号(非int)
             try:
                 try:
                     storage_value = global_state["Ia"][int(stack[0])]
@@ -155,6 +158,7 @@ def calculate_gas(opcode, stack, mem, global_state, analysis, solver):
 
 
     #Calculate gas memory, add it to total gas used
+    # 计算gas memory，将其添加到总gas使用量中
     length = len(mem.keys()) # number of memory words
     new_gas_memory = GCOST["Gmemory"] * length + (length ** 2) // 512
     gas_increment += new_gas_memory - gas_memory
@@ -166,13 +170,13 @@ def update_analysis(analysis, opcode, stack, mem, global_state, path_conditions_
     analysis["gas"] += gas_increment
     analysis["gas_mem"] = gas_memory
 
-    if opcode == "CALL":
+    if opcode == "CALL":    # 重入检测
         recipient = stack[1]
         transfer_amount = stack[2]
         if isReal(transfer_amount) and transfer_amount == 0:
             return
         if isSymbolic(recipient):
-            recipient = simplify(recipient)
+            recipient = simplify(recipient) # z3函数
 
         reentrancy_result = check_reentrancy_bug(path_conditions_and_vars, stack, global_state)
         analysis["reentrancy_bug"].append(reentrancy_result)

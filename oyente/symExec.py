@@ -525,6 +525,7 @@ def get_init_global_state(path_conditions_and_vars):
 
     return global_state
 
+# 获取函数的pc和签名
 def get_start_block_to_func_sig():
     state = 0
     func_sig = None
@@ -550,8 +551,8 @@ def full_sym_exec():
     analysis = init_analysis()
     params = Parameter(path_conditions_and_vars=path_conditions_and_vars, global_state=global_state, analysis=analysis)
     if g_src_map:
-        start_block_to_func_sig = get_start_block_to_func_sig()
-    return sym_exec_block(params, 0, 0, 0, -1, 'fallback')
+        start_block_to_func_sig = get_start_block_to_func_sig() # 获取函数的pc和签名
+    return sym_exec_block(params, 0, 0, 0, -1, 'fallback')  # 从起始地址符号执行一个块，内含递归符号执行
 
 
 # Symbolically executing a block from the start address
@@ -576,7 +577,7 @@ def sym_exec_block(params, block, pre_block, depth, func_call, current_func_name
     calls = params.calls
     overflow_pcs = params.overflow_pcs
 
-    Edge = namedtuple("Edge", ["v1", "v2"]) # Factory Function for tuples is used as dictionary key
+    Edge = namedtuple("Edge", ["v1", "v2"]) # 具名元组 Factory Function for tuples is used as dictionary key
     if block < 0:
         log.debug("UNKNOWN JUMP ADDRESS. TERMINATING THIS PATH")
         return ["ERROR"]
@@ -584,7 +585,7 @@ def sym_exec_block(params, block, pre_block, depth, func_call, current_func_name
     log.debug("Reach block address %d \n", block)
 
     if g_src_map:
-        if block in start_block_to_func_sig:
+        if block in start_block_to_func_sig:    # 如果是函数块，则得到current_func_name，但是函数名是变量？
             func_sig = start_block_to_func_sig[block]
             current_func_name = g_src_map.sig_to_func[func_sig]
             pattern = r'(\w[\w\d_]*)\((.*)\)$'
@@ -592,33 +593,35 @@ def sym_exec_block(params, block, pre_block, depth, func_call, current_func_name
             if match:
                 current_func_name =  list(match.groups())[0]
 
-    current_edge = Edge(pre_block, block)
-    if current_edge in visited_edges:
+    current_edge = Edge(pre_block, block)   # 构建当前边(前block起始pc, 当前block起始pc)
+    if current_edge in visited_edges:   # 更新当前边的访问次数
         updated_count_number = visited_edges[current_edge] + 1
         visited_edges.update({current_edge: updated_count_number})
     else:
         visited_edges.update({current_edge: 1})
 
-    if visited_edges[current_edge] > global_params.LOOP_LIMIT:
+    if visited_edges[current_edge] > global_params.LOOP_LIMIT:  # 处理循环次数超过上限的情况
         log.debug("Overcome a number of loop limit. Terminating this path ...")
         return stack
 
-    current_gas_used = analysis["gas"]
-    if current_gas_used > global_params.GAS_LIMIT:
+    current_gas_used = analysis["gas"]  # 获取当前已消耗的gas
+    if current_gas_used > global_params.GAS_LIMIT:  # 处理gas超过上限的情况
         log.debug("Run out of gas. Terminating this path ... ")
         return stack
 
     # Execute every instruction, one at a time
+    # 执行每个指令，一次一个
     try:
         block_ins = vertices[block].get_instructions()
     except KeyError:
         log.debug("This path results in an exception, possibly an invalid jump address")
         return ["ERROR"]
 
-    for instr in block_ins:
+    for instr in block_ins: # 符号执行块中的每一个指令
         sym_exec_ins(params, block, instr, func_call, current_func_name)
 
     # Mark that this basic block in the visited blocks
+    # 在已访问的块中标记此基本块
     visited.append(block)
     depth += 1
 
@@ -776,8 +779,11 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
         return
 
     # collecting the analysis result by calling this skeletal function
+    # 通过调用这个骨架函数来收集分析结果
     # this should be done before symbolically executing the instruction,
+    # 这应该在符号执行指令之前完成
     # since SE will modify the stack and mem
+    # 因为符号执行将修改stack和mem
     update_analysis(analysis, opcode, stack, mem, global_state, path_conditions_and_vars, solver)
     if opcode == "CALL" and analysis["reentrancy_bug"] and analysis["reentrancy_bug"][-1]:
         global_problematic_pcs["reentrancy_bug"].append(global_state["pc"])
