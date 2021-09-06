@@ -2479,6 +2479,8 @@ def run(disasm_file=None, source_file=None, source_map=None):
     if is_testing_evm():
         test()
     else:
+        # 改为全局变量
+        global begin
         begin = time.time()
         log.info("\t============ Results ===========")
         analyze()
