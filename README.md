@@ -238,8 +238,8 @@ add /build/bin to path
                 detect_integer_underflow()
                 detect_integer_overflow()
                 detect_parity_multisig_bug_2()
-                detect_callstack_attack()
-                detect_money_concurrency()
+                detect_callstack_attack()   # 调用未判断ISZERO
+                detect_money_concurrency()  # 检测交易顺序依赖(TOD)
                 detect_time_dependency()
                 detect_reentrancy()
                 detect_assertion_failure()
