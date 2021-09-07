@@ -260,7 +260,7 @@ add /build/bin to path
                                 # 获取块指令并循环执行
                                     sym_exec_ins(params, block, instr, func_call, current_func_name)
                                         global MSIZE
-                                        global visited_pcs  # 已访问对的pc
+                                        global visited_pcs  # 已访问的pc
                                         global solver
                                         global vertices
                                         global edges
@@ -283,6 +283,13 @@ add /build/bin to path
 
                                         # 符号执行之前收集分析结果，符号执行将修改stack和mem
                                         update_analysis(analysis, opcode, stack, mem, global_state, path_conditions_and_vars, solver)
+                                            # gas/gas_mem计算更新
+                                            # 如果是CALL并且recipient是符号，则检测重入，添加分析结果
+                                                reentrancy_result = check_reentrancy_bug(path_conditions_and_vars, stack, global_state)
+                                                analysis["reentrancy_bug"].append(reentrancy_result)
+
+                                                analysis["money_concurrency_bug"].append(global_state["pc"])
+                                                analysis["money_flow"].append( ("Ia", str(recipient), str(transfer_amount)))
 
                                         # 如果确认存在重入则将pc添加到global_problematic_pcs["reentrancy_bug"]
                                         # 符号执行指令......(STOP和算术运算、比较和按位逻辑运算、SHA3、环境信息、区块信息、Stack, Memory, Storage, 和 Flow信息、PUSH、DUP、SWAP、LOG、系统操作)

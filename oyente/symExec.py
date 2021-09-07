@@ -475,12 +475,12 @@ def get_init_global_state(path_conditions_and_vars):
     global_state["balance"]["Ia"] = (init_ia + deposited_value)
 
     if not gas_price:
-        new_var_name = gen.gen_gas_price_var()
+        new_var_name = gen.gen_gas_price_var()  # Ip
         gas_price = BitVec(new_var_name, 256)
         path_conditions_and_vars[new_var_name] = gas_price
 
     if not origin:
-        new_var_name = gen.gen_origin_var()
+        new_var_name = gen.gen_origin_var() # Io
         origin = BitVec(new_var_name, 256)
         path_conditions_and_vars[new_var_name] = origin
 
@@ -1104,7 +1104,7 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
                 # The computed value is unknown, this is because power is
                 # not supported in bit-vector theory
                 # 不支持幂操作，设为未知数
-                new_var_name = gen.gen_arbitrary_var()
+                new_var_name = gen.gen_arbitrary_var()  # some_var_*
                 computed = BitVec(new_var_name, 256)
             computed = simplify(computed) if is_expr(computed) else computed
             stack.insert(0, computed)
@@ -1345,13 +1345,13 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
                 if position in sha3_list:
                     stack.insert(0, sha3_list[position])
                 else:
-                    new_var_name = gen.gen_arbitrary_var()
+                    new_var_name = gen.gen_arbitrary_var()  # some_var_*
                     new_var = BitVec(new_var_name, 256)
                     sha3_list[position] = new_var
                     stack.insert(0, new_var)
             else:
                 # push into the execution a fresh symbolic variable
-                new_var_name = gen.gen_arbitrary_var()
+                new_var_name = gen.gen_arbitrary_var()  # some_var_*
                 new_var = BitVec(new_var_name, 256)
                 path_conditions_and_vars[new_var_name] = new_var
                 stack.insert(0, new_var)
@@ -1370,7 +1370,7 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
             if isReal(address) and global_params.USE_GLOBAL_BLOCKCHAIN:
                 new_var = data_source.getBalance(address)
             else:
-                new_var_name = gen.gen_balance_var()
+                new_var_name = gen.gen_balance_var()    # balance_*
                 if new_var_name in path_conditions_and_vars:
                     new_var = path_conditions_and_vars[new_var_name]
                 else:
@@ -1408,9 +1408,9 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
                             new_var_name = param['name']
                             g_src_map.var_names.append(new_var_name)
                 else:
-                    new_var_name = gen.gen_data_var(position)
+                    new_var_name = gen.gen_data_var(position)   # Id_size
             else:
-                new_var_name = gen.gen_data_var(position)
+                new_var_name = gen.gen_data_var(position)   # Id_size
             if new_var_name in path_conditions_and_vars:
                 new_var = path_conditions_and_vars[new_var_name]
             else:
@@ -1421,7 +1421,7 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
             raise ValueError('STACK underflow')
     elif opcode == "CALLDATASIZE":
         global_state["pc"] = global_state["pc"] + 1
-        new_var_name = gen.gen_data_size()
+        new_var_name = gen.gen_data_size()  # Id_size
         if new_var_name in path_conditions_and_vars:
             new_var = path_conditions_and_vars[new_var_name]
         else:
@@ -1474,8 +1474,8 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
                     end = start + no_bytes * 2
                     code = evm[start: end]
                 mem[mem_location] = int(code, 16)
-            else:
-                new_var_name = gen.gen_code_var("Ia", code_from, no_bytes)
+            else:  
+                new_var_name = gen.gen_code_var("Ia", code_from, no_bytes)  # code_
                 if new_var_name in path_conditions_and_vars:
                     new_var = path_conditions_and_vars[new_var_name]
                 else:
