@@ -292,17 +292,43 @@ add /build/bin to path
                                                 analysis["money_flow"].append( ("Ia", str(recipient), str(transfer_amount)))
 
                                         # 如果确认存在重入则将pc添加到global_problematic_pcs["reentrancy_bug"]
+
                                         # 符号执行指令......(STOP和算术运算、比较和按位逻辑运算、SHA3、环境信息、区块信息、Stack, Memory, Storage, 和 Flow信息、PUSH、DUP、SWAP、LOG、系统操作)
+                                        # EXP: 若两个数都为整数则计算，否则压入未知符号值代替(不能计算)
+                                        # SHA3: (若两个数都为整数 and sha3_list[position]没有) or 不都为整数 则压入符号值，不都为整数时将符号值变量添加到path_conditions_and_vars中
+                                        # BALANCE: address不是整数时，压入符号变量，加入到path_conditions_and_vars中
+                                        # CALL/CALLCODE: 1.将pc添加到calls 2.遍历calls(call_pc) 3.如果call_pc不在calls_affect_state中,则calls_affect_state[call_pc] = False
+                                        # SSTORE: 遍历calls(call_pc),令calls_affect_state[call_pc] = True
+                                        # ...
+
                                 # visited将block标记为一访问
                                 # depth + 1
+
+                                # TODO 待处理...
+
+                                # 跳转到下一个block(递归)
 
 
             ret = detect_vulnerabilities()
                 detect_integer_underflow()
+                    # global_problematic_pcs['integer_underflow']/pcs在SUB指令执行时处理
+                    integer_underflow = IntegerUnderflow(g_src_map, global_problematic_pcs['integer_underflow'])
+                        # 删除假阳性pc(1.删除没有源代码的pc 2.删除有相同pos的pc pos如："{'begin': 417, 'end': 435, 'name': 'CALL'}")
+                        # 通过新pcs获取源代码输出警告
                 detect_integer_overflow()
+                    # global_problematic_pcs['integer_overflow']/pcs在ADD指令执行时处理
+                    # 另外删除在revertible_overflow_pcs中的pc，revert会回滚，为什么integer_underflow中不处理？
+                    integer_overflow = IntegerOverflow(g_src_map, overflows)
+                        # 同上
                 detect_parity_multisig_bug_2()
                 detect_callstack_attack()   # 调用未判断ISZERO
+                    # 读取.disasm文件处理得到指令ins[000: ('0', 'PUSH', '1', '60')...]
+                    pcs = check_callstack_attack(instr) # 检测后面没有ISZERO的pcs
+                    callstack = CallStack(g_src_map, pcs, calls_affect_state)
+                        # 根据calls_affect_state删除假阳性的pc
+                        # 通过新pcs获取源代码输出警告
                 detect_money_concurrency()  # 检测交易顺序依赖(TOD)
+                    # TODO
                 detect_time_dependency()
                 detect_reentrancy()
                 detect_assertion_failure()

@@ -1408,9 +1408,9 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
                             new_var_name = param['name']
                             g_src_map.var_names.append(new_var_name)
                 else:
-                    new_var_name = gen.gen_data_var(position)   # Id_size
+                    new_var_name = gen.gen_data_var(position)   # Id_*
             else:
-                new_var_name = gen.gen_data_var(position)   # Id_size
+                new_var_name = gen.gen_data_var(position)   # Id_*
             if new_var_name in path_conditions_and_vars:
                 new_var = path_conditions_and_vars[new_var_name]
             else:
@@ -1475,7 +1475,7 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
                     code = evm[start: end]
                 mem[mem_location] = int(code, 16)
             else:  
-                new_var_name = gen.gen_code_var("Ia", code_from, no_bytes)  # code_
+                new_var_name = gen.gen_code_var("Ia", code_from, no_bytes)  # code_Ia_*_*
                 if new_var_name in path_conditions_and_vars:
                     new_var = path_conditions_and_vars[new_var_name]
                 else:
@@ -1506,7 +1506,7 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
             raise ValueError('STACK underflow')
     elif opcode == "RETURNDATASIZE":
         global_state["pc"] += 1
-        new_var_name = gen.gen_arbitrary_var()
+        new_var_name = gen.gen_arbitrary_var()  # some_var_*
         new_var = BitVec(new_var_name, 256)
         stack.insert(0, new_var)
     elif opcode == "GASPRICE":
@@ -1521,7 +1521,7 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
                 stack.insert(0, len(code)/2)
             else:
                 #not handled yet
-                new_var_name = gen.gen_code_size_var(address)
+                new_var_name = gen.gen_code_size_var(address)   # code_size_* address
                 if new_var_name in path_conditions_and_vars:
                     new_var = path_conditions_and_vars[new_var_name]
                 else:
@@ -1553,7 +1553,7 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
                 code = evm[start: end]
                 mem[mem_location] = int(code, 16)
             else:
-                new_var_name = gen.gen_code_var(address, code_from, no_bytes)
+                new_var_name = gen.gen_code_var(address, code_from, no_bytes)   # code_*_*_*
                 if new_var_name in path_conditions_and_vars:
                     new_var = path_conditions_and_vars[new_var_name]
                 else:
@@ -1639,7 +1639,7 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
                         # this means that it is possibly that current_miu_i < temp
                         current_miu_i = If(expression,temp,current_miu_i)
                 solver.pop()
-                new_var_name = gen.gen_mem_var(address)
+                new_var_name = gen.gen_mem_var(address) # mem_*
                 if new_var_name in path_conditions_and_vars:
                     new_var = path_conditions_and_vars[new_var_name]
                 else:
@@ -1748,11 +1748,11 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
                         new_var_name = re.compile(operators).split(new_var_name)[0].strip()
                         new_var_name = g_src_map.get_parameter_or_state_var(new_var_name)
                         if new_var_name:
-                            new_var_name = gen.gen_owner_store_var(position, new_var_name)
+                            new_var_name = gen.gen_owner_store_var(position, new_var_name)  # Ia_store-*-*
                         else:
-                            new_var_name = gen.gen_owner_store_var(position)
+                            new_var_name = gen.gen_owner_store_var(position)    # Ia_store-*-
                     else:
-                        new_var_name = gen.gen_owner_store_var(position)
+                        new_var_name = gen.gen_owner_store_var(position)    # Ia_store-*-
 
                     if new_var_name in path_conditions_and_vars:
                         new_var = path_conditions_and_vars[new_var_name]
@@ -1831,7 +1831,7 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
         # can be tracked
         # 一般来说，我们并没有准确地做到这一点。 这取决于初始gas和消耗的数量，我们需要在未来考虑这一点，以防可以跟踪精确的gas
         global_state["pc"] = global_state["pc"] + 1
-        new_var_name = gen.gen_gas_var()
+        new_var_name = gen.gen_gas_var()       # gas_*
         new_var = BitVec(new_var_name, 256)
         path_conditions_and_vars[new_var_name] = new_var
         stack.insert(0, new_var)
@@ -1893,7 +1893,7 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
             stack.pop(0)
             stack.pop(0)
             stack.pop(0)
-            new_var_name = gen.gen_arbitrary_var()
+            new_var_name = gen.gen_arbitrary_var()  # some_var_*
             new_var = BitVec(new_var_name, 256)
             stack.insert(0, new_var)
         else:
@@ -1955,8 +1955,8 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
                     if isReal(recipient):
                         new_address_name = "concrete_address_" + str(recipient)
                     else:
-                        new_address_name = gen.gen_arbitrary_address_var()
-                    old_balance_name = gen.gen_arbitrary_var()
+                        new_address_name = gen.gen_arbitrary_address_var()  # some_address_*
+                    old_balance_name = gen.gen_arbitrary_var()  # some_var_*
                     old_balance = BitVec(old_balance_name, 256)
                     path_conditions_and_vars[old_balance_name] = old_balance
                     constraint = (old_balance >= 0)
@@ -2036,7 +2036,7 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
             stack.pop(0)
             stack.pop(0)
             stack.pop(0)
-            new_var_name = gen.gen_arbitrary_var()
+            new_var_name = gen.gen_arbitrary_var()  # some_var_*
             new_var = BitVec(new_var_name, 256)
             stack.insert(0, new_var)
         else:
@@ -2061,8 +2061,8 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
         if isReal(recipient):
             new_address_name = "concrete_address_" + str(recipient)
         else:
-            new_address_name = gen.gen_arbitrary_address_var()
-        old_balance_name = gen.gen_arbitrary_var()
+            new_address_name = gen.gen_arbitrary_address_var()  # some_address_*
+        old_balance_name = gen.gen_arbitrary_var()  # some_var_*
         old_balance = BitVec(old_balance_name, 256)
         path_conditions_and_vars[old_balance_name] = old_balance
         constraint = (old_balance >= 0)
@@ -2486,4 +2486,5 @@ def run(disasm_file=None, source_file=None, source_map=None):
         analyze()
         ret = detect_vulnerabilities()
         closing_message()
+        # print_cfg()
         return ret
