@@ -232,7 +232,63 @@ add /build/bin to path
                                     # EQ
                                     # PUSH2 0x0334    (pc)
                                     
-                            return sym_exec_block(params, 0, 0, 0, -1, 'fallback')  # 从起始地址符号执行一个块，内含递归符号执行
+                            return sym_exec_block(params, 0, 0, 0, -1, 'fallback')  # 从起始地址符号执行一个块，内含递归符号执行 
+                            sym_exec_block(params, block, pre_block, depth, func_call, current_func_name)
+                                global solver
+                                global visited_edges
+                                global money_flow_all_paths
+                                global path_conditions
+                                global global_problematic_pcs
+                                global all_gs
+                                global results
+                                global g_src_map
+
+                                visited = params.visited
+                                stack = params.stack
+                                mem = params.mem
+                                memory = params.memory
+                                global_state = params.global_state
+                                sha3_list = params.sha3_list
+                                path_conditions_and_vars = params.path_conditions_and_vars
+                                analysis = params.analysis
+                                calls = params.calls
+                                overflow_pcs = params.overflow_pcs
+                                # 若当前块是函数，则给current_func_name赋值
+                                # 创建Edge(pre_block, cur_block)更新visited_edges是否+1
+                                # 检测边访问次数是否超过限制
+                                # 检测gas使用是否超过限制
+                                # 获取块指令并循环执行
+                                    sym_exec_ins(params, block, instr, func_call, current_func_name)
+                                        global MSIZE
+                                        global visited_pcs  # 已访问对的pc
+                                        global solver
+                                        global vertices
+                                        global edges
+                                        global g_src_map
+                                        global calls_affect_state
+                                        global data_source
+
+                                        stack = params.stack
+                                        mem = params.mem
+                                        memory = params.memory
+                                        global_state = params.global_state
+                                        sha3_list = params.sha3_list
+                                        path_conditions_and_vars = params.path_conditions_and_vars
+                                        analysis = params.analysis
+                                        calls = params.calls
+                                        overflow_pcs = params.overflow_pcs
+                                        # 添加visited_pcs
+                                        # 获取操作码
+                                        # 如果是INVALID/ASSERTFAIL操作码则进行处理
+
+                                        # 符号执行之前收集分析结果，符号执行将修改stack和mem
+                                        update_analysis(analysis, opcode, stack, mem, global_state, path_conditions_and_vars, solver)
+
+                                        # 如果确认存在重入则将pc添加到global_problematic_pcs["reentrancy_bug"]
+                                        # 符号执行指令......(STOP和算术运算、比较和按位逻辑运算、SHA3、环境信息、区块信息、Stack, Memory, Storage, 和 Flow信息、PUSH、DUP、SWAP、LOG、系统操作)
+                                # visited将block标记为一访问
+                                # depth + 1
+
 
             ret = detect_vulnerabilities()
                 detect_integer_underflow()
