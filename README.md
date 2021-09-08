@@ -284,12 +284,16 @@ add /build/bin to path
                                         # 符号执行之前收集分析结果，符号执行将修改stack和mem
                                         update_analysis(analysis, opcode, stack, mem, global_state, path_conditions_and_vars, solver)
                                             # gas/gas_mem计算更新
-                                            # 如果是CALL并且recipient是符号，则检测重入，添加分析结果
+                                            # 如果是CALL并且recipient是符号，则检测重入，添加分析结果，添加money信息
                                                 reentrancy_result = check_reentrancy_bug(path_conditions_and_vars, stack, global_state)
                                                 analysis["reentrancy_bug"].append(reentrancy_result)
 
                                                 analysis["money_concurrency_bug"].append(global_state["pc"])
                                                 analysis["money_flow"].append( ("Ia", str(recipient), str(transfer_amount)))
+
+                                            # 如果是SUCIDE，添加money信息
+                                                analysis['money_concurrency_bug'].append(global_state['pc'])
+                                                analysis["money_flow"].append(("Ia", str(recipient), "all_remaining"))
 
                                         # 如果确认存在重入则将pc添加到global_problematic_pcs["reentrancy_bug"]
 
@@ -304,7 +308,7 @@ add /build/bin to path
                                 # visited将block标记为一访问
                                 # depth + 1
 
-                                # TODO 待处理...
+                                # 块指令执行玩后(有块的指令分析结果)，添加重入分析、money分析和时间戳依赖分析结果到全局变量中
 
                                 # 跳转到下一个block(递归)
 
@@ -328,7 +332,7 @@ add /build/bin to path
                         # 根据calls_affect_state删除假阳性的pc
                         # 通过新pcs获取源代码输出警告
                 detect_money_concurrency()  # 检测交易顺序依赖(TOD)
-                    # TODO
+                    # 两层对比遍历money_flow_all_paths，检查两个不同的轨迹是否具有不同的以太流量
                 detect_time_dependency()
                 detect_reentrancy()
                 detect_assertion_failure()

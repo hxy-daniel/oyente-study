@@ -221,6 +221,10 @@ def is_feasible(prev_pc, gstate, curr_pc):
 # 2. We then check if two paths cannot be executed next to each other, for example they
 # are two paths yielded from this branch condition ``if (locked)"
 # 3. More checks are to come
+# 检测两个流是否真的没有竞争条件，即检查是否可以在路径 i 之后执行路径 j。
+# 1.我们首先从一个简单的检查开始，看看一个路径是否编辑了一些使得另一个路径不可行的存储变量
+# 2.然后我们检查两条路径是否不能相邻执行，例如它们是从这个分支条件“if (locked)”产生的两条路径
+# 3.更多检查即将到来
 def is_false_positive(i, j, all_gs, path_conditions):
     pathi = path_conditions[i]
     pathj = path_conditions[j]

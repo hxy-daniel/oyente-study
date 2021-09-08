@@ -625,6 +625,7 @@ def sym_exec_block(params, block, pre_block, depth, func_call, current_func_name
     visited.append(block)
     depth += 1
 
+    # 块指令执行玩后(有块的指令分析结果)，添加money分析和时间戳依赖分析结果
     reentrancy_all_paths.append(analysis["reentrancy_bug"])
     if analysis["money_flow"] not in money_flow_all_paths:
         global_problematic_pcs["money_concurrency_bug"].append(analysis["money_concurrency_bug"])
@@ -2141,6 +2142,7 @@ def detect_money_concurrency():
             jflow = money_flow_all_paths[j]
             if len(jflow) == 1:
                 continue
+            # 检查两个不同的轨迹是否具有不同的以太流量
             if is_diff(flow, jflow):
                 flows.append(global_problematic_pcs["money_concurrency_bug"][i-1])
                 flows.append(global_problematic_pcs["money_concurrency_bug"][j])
